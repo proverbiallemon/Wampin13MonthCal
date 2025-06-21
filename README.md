@@ -31,7 +31,7 @@ A modern web application featuring a unique 13-month calendar system with glassm
 
 ## 🚀 Live Demo
 
-Visit the live application: [Coming Soon - Cloudflare Pages]
+Visit the live application: [https://wampin-13-month-calendar.pages.dev](https://wampin-13-month-calendar.pages.dev)
 
 ## 🛠️ Technology Stack
 
