@@ -1,0 +1,6 @@
+# Copy this file to .dev.vars and fill in your values
+# This file is used by Wrangler for local development
+
+# Google OAuth credentials
+GOOGLE_CLIENT_ID=your-google-client-id-here
+GOOGLE_CLIENT_SECRET=your-google-client-secret-here

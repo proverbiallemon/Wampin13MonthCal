@@ -12,6 +12,7 @@ import { getCurrentDate13Month, isSameDate13Month, thirteenMonthToGregorian, gre
 import GregorianCalendar from './GregorianCalendar'
 import DatePicker from './DatePicker'
 import PerpetualDayIndicator from './PerpetualDayIndicator'
+import GoogleCalendarSync from './GoogleCalendarSync'
 
 function Calendar({ theme, setTheme }) {
   const currentDate13Month = getCurrentDate13Month()
@@ -30,6 +31,7 @@ function Calendar({ theme, setTheme }) {
   const [calendarMode, setCalendarMode] = useState('13month') // '13month' or 'gregorian'
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false)
+  const [googleEvents, setGoogleEvents] = useState([])
   
   const isDark = theme === 'dark' || theme === 'blackice'
   const isBlackIce = theme === 'blackice'
@@ -136,6 +138,14 @@ function Calendar({ theme, setTheme }) {
     const dayOfWeek = index % 7
     const isLeftEdge = dayOfWeek < 2
     const isRightEdge = dayOfWeek > 4
+    
+    // Check if this day has Google Calendar events
+    const hasGoogleEvent = googleEvents.some(event => {
+      if (!event.thirteenMonthStart) return false
+      return event.thirteenMonthStart.year === selectedYear13 &&
+             event.thirteenMonthStart.month === selectedMonth13 &&
+             event.thirteenMonthStart.day === dayNum
+    })
 
     return (
       <div 
@@ -192,6 +202,17 @@ function Calendar({ theme, setTheme }) {
               ? (isToday || isSelected ? 'text-white/90' : holiday.color.replace('text-', 'text-white/90'))
               : (isToday || isSelected ? 'text-white/90' : holiday.color)
           }`} />
+        )}
+        
+        {/* Google Calendar event indicator */}
+        {hasGoogleEvent && (
+          <div className={`absolute top-1 right-1 w-2 h-2 rounded-full ${
+            isBlackIce
+              ? 'bg-cyan-400 shadow-cyan-400/50'
+              : isDark
+              ? 'bg-purple-400 shadow-purple-400/50'
+              : 'bg-purple-600 shadow-purple-600/50'
+          } shadow-lg`}></div>
         )}
         
         {hoveredHoliday?.day === dayNum && (
@@ -476,6 +497,12 @@ function Calendar({ theme, setTheme }) {
         <PerpetualDayIndicator 
           theme={theme} 
           selectedDay={selectedDate?.day}
+        />
+        
+        {/* Google Calendar Sync */}
+        <GoogleCalendarSync
+          theme={theme}
+          onEventsLoaded={setGoogleEvents}
         />
       </>
     )
