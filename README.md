@@ -16,6 +16,21 @@ A modern web application featuring a unique 13-month calendar system with glassm
 - **New Year's Leap** - An extra day in leap years (day 366)
 - Perfect weekly cycles throughout the year
 
+### Calendar Views & Navigation
+- **13-Month Calendar** - The primary view with all unique features
+- **Gregorian Calendar** - Traditional calendar view with holiday mapping
+- **Smooth Toggle** - Animated transitions between calendar modes
+- **Date Picker** - Click the month/year header for quick date navigation
+  - Year selector with up/down navigation
+  - Month grid for easy month selection
+  - Full calendar picker with day selection
+
+### Unique 13-Month Features
+- **Week Numbers (1-52)** - Perfect alignment with 4 weeks per month
+- **Perpetual Day Indicator** - Shows which dates always fall on the same weekday
+- **Holiday System** - Special holidays for each month with custom icons
+- **Tooltip Positioning** - Smart tooltips that avoid edge clipping
+
 ### Three Beautiful Themes
 1. **Light Mode** - Soft pastels with elegant glassmorphism
 2. **Dark Mode** - Rich gradients with classic glass effects
@@ -56,6 +71,25 @@ Visit the live application: [https://wampin-13-month-calendar.pages.dev](https:/
 11. November
 12. December
 13. **Yule**
+
+## 🎯 Why 13 Months?
+
+The 13-month calendar offers several advantages over the traditional Gregorian calendar:
+
+### Perfect Regularity
+- **Every month has exactly 28 days** (4 complete weeks)
+- **Same date = Same weekday** all year (e.g., the 15th is always the same day of the week)
+- **52 perfect weeks** with no split weeks across months
+
+### Better Planning
+- **Predictable patterns** make scheduling easier
+- **Monthly comparisons** are accurate (all months have the same number of days)
+- **Payroll & billing cycles** align perfectly with months
+
+### Natural Alignment
+- **28-day months** closely match the lunar cycle (~29.5 days)
+- **13 months × 28 days = 364 days** plus New Year's Day
+- **Quarters** can be 3-3-3-4 months for even distribution
 
 ## 🎨 Themes
 
