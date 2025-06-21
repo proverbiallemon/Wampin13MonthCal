@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { 
   ChevronLeftIcon, 
   ChevronRightIcon,
@@ -11,6 +11,7 @@ import { monthNames, holidays, getDaysInMonth } from '../utils/calendarData'
 import { getCurrentDate13Month, isSameDate13Month, thirteenMonthToGregorian, gregorianTo13Month } from '../utils/dateConversion'
 import GregorianCalendar from './GregorianCalendar'
 import DatePicker from './DatePicker'
+import PerpetualDayIndicator from './PerpetualDayIndicator'
 
 function Calendar({ theme, setTheme }) {
   const currentDate13Month = getCurrentDate13Month()
@@ -311,7 +312,7 @@ function Calendar({ theme, setTheme }) {
             <p className={`text-sm mt-2 ${
               isBlackIce ? 'text-cyan-200/70' : isDark ? 'text-white/70' : 'text-gray-600'
             }`}>
-              Month {selectedMonth13} of 13
+              Month {selectedMonth13} of 13 • Weeks {(selectedMonth13 - 1) * 4 + 1}-{selectedMonth13 === 13 ? '52' : selectedMonth13 * 4}
             </p>
             {(selectedMonth13 !== currentDate13Month.month || selectedYear13 !== currentDate13Month.year) && (
               <button
@@ -348,7 +349,12 @@ function Calendar({ theme, setTheme }) {
           </button>
         </div>
 
-        <div className="grid grid-cols-7 gap-3">
+        <div className="grid grid-cols-8 gap-3">
+          <div className={`text-center font-semibold text-sm py-3 ${
+            isBlackIce ? 'text-cyan-300/50' : isDark ? 'text-white/50' : 'text-gray-500'
+          }`}>
+            Wk
+          </div>
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
             <div key={day} className={`text-center font-semibold text-sm py-3 ${
               isBlackIce ? 'text-cyan-300/70' : isDark ? 'text-white/70' : 'text-gray-700'
@@ -357,14 +363,44 @@ function Calendar({ theme, setTheme }) {
             </div>
           ))}
           
-          {/* Regular 28 days */}
-          {[...Array(28)].map((_, i) => renderDay13Month(i + 1, i))}
+          {/* Render weeks with week numbers */}
+          {[...Array(4)].map((_, weekIndex) => {
+            const weekNumber = (selectedMonth13 - 1) * 4 + weekIndex + 1
+            return (
+              <React.Fragment key={`week-${weekIndex}`}>
+                {/* Week number */}
+                <div className={`aspect-square flex items-center justify-center text-xs font-medium ${
+                  isBlackIce ? 'text-cyan-300/50' : isDark ? 'text-white/50' : 'text-gray-500'
+                }`}>
+                  {weekNumber}
+                </div>
+                {/* Days in the week */}
+                {[...Array(7)].map((_, dayIndex) => {
+                  const dayNum = weekIndex * 7 + dayIndex + 1
+                  return renderDay13Month(dayNum, weekIndex * 7 + dayIndex)
+                })}
+              </React.Fragment>
+            )
+          })}
           
-          {/* New Year's Day (29th) for Yule */}
-          {selectedMonth13 === 13 && renderDay13Month(29, 28)}
-          
-          {/* New Year's Leap (30th) for Yule in leap years */}
-          {selectedMonth13 === 13 && daysInMonth === 30 && renderDay13Month(30, 29)}
+          {/* Special days for Yule with week 52 */}
+          {selectedMonth13 === 13 && (
+            <React.Fragment>
+              <div className={`aspect-square flex items-center justify-center text-xs font-medium ${
+                isBlackIce ? 'text-cyan-300/50' : isDark ? 'text-white/50' : 'text-gray-500'
+              }`}>
+                52
+              </div>
+              {renderDay13Month(29, 28)}
+              {daysInMonth === 30 ? (
+                renderDay13Month(30, 29)
+              ) : (
+                <div /> // Empty cell
+              )}
+              {/* Fill remaining cells */}
+              {[...Array(5)].map((_, i) => <div key={`empty-${i}`} />)}
+            </React.Fragment>
+          )}
         </div>
 
         {selectedMonth13 === 13 && (
@@ -435,6 +471,12 @@ function Calendar({ theme, setTheme }) {
             </div>
           )}
         </div>
+        
+        {/* Perpetual Day Indicator */}
+        <PerpetualDayIndicator 
+          theme={theme} 
+          selectedDay={selectedDate?.day}
+        />
       </>
     )
   }
