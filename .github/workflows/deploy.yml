@@ -37,4 +37,3 @@ jobs:
           projectName: wampin-13-month-calendar
           directory: dist
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-          deployment-trigger: ${{ github.event_name }}
