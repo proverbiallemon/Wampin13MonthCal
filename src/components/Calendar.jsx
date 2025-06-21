@@ -41,7 +41,7 @@ function Calendar({ theme, setTheme }) {
   const daysInMonth = getDaysInMonth(selectedMonth, selectedYear)
   const monthHolidays = holidays[selectedMonth] || {}
 
-  const renderDay = (dayNum) => {
+  const renderDay = (dayNum, index) => {
     const holiday = monthHolidays[dayNum]
     const Icon = holiday?.icon
     const isSpecialDay = dayNum === 29 || dayNum === 30
@@ -66,6 +66,11 @@ function Calendar({ theme, setTheme }) {
         day: dayNum
       })
     }
+    
+    // Determine tooltip position based on day position
+    const dayOfWeek = index % 7
+    const isLeftEdge = dayOfWeek < 2
+    const isRightEdge = dayOfWeek > 4
 
     return (
       <div 
@@ -125,10 +130,14 @@ function Calendar({ theme, setTheme }) {
         )}
         
         {hoveredHoliday?.day === dayNum && (
-          <div className="absolute z-20 bottom-full left-1/2 transform -translate-x-1/2 mb-3 px-4 py-3 backdrop-blur-xl bg-black/70 text-white text-sm rounded-xl whitespace-nowrap border border-white/20 shadow-xl">
+          <div className={`absolute z-20 bottom-full mb-3 px-4 py-3 backdrop-blur-xl bg-black/70 text-white text-sm rounded-xl whitespace-nowrap border border-white/20 shadow-xl ${
+            isLeftEdge ? 'left-0' : isRightEdge ? 'right-0' : 'left-1/2 transform -translate-x-1/2'
+          }`}>
             <div className="font-bold text-white">{holiday.name}</div>
             <div className="text-white/80 text-xs mt-1">{holiday.description}</div>
-            <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-black/70"></div>
+            <div className={`absolute top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-black/70 ${
+              isLeftEdge ? 'left-4' : isRightEdge ? 'right-4' : 'left-1/2 transform -translate-x-1/2'
+            }`}></div>
           </div>
         )}
       </div>
@@ -136,7 +145,7 @@ function Calendar({ theme, setTheme }) {
   }
 
   return (
-    <div className={`backdrop-blur-xl rounded-3xl shadow-2xl p-8 max-w-4xl mx-auto border relative overflow-hidden transition-all duration-700 ${
+    <div className={`backdrop-blur-xl rounded-3xl shadow-2xl p-8 max-w-4xl mx-auto border relative overflow-visible transition-all duration-700 ${
       isBlackIce 
         ? 'bg-slate-900/40 border-cyan-500/20' 
         : isDark
@@ -263,13 +272,13 @@ function Calendar({ theme, setTheme }) {
         ))}
         
         {/* Regular 28 days */}
-        {[...Array(28)].map((_, i) => renderDay(i + 1))}
+        {[...Array(28)].map((_, i) => renderDay(i + 1, i))}
         
         {/* New Year's Day (29th) for Yule */}
-        {selectedMonth === 13 && renderDay(29)}
+        {selectedMonth === 13 && renderDay(29, 28)}
         
         {/* New Year's Leap (30th) for Yule in leap years */}
-        {selectedMonth === 13 && daysInMonth === 30 && renderDay(30)}
+        {selectedMonth === 13 && daysInMonth === 30 && renderDay(30, 29)}
       </div>
 
       {selectedMonth === 13 && (
