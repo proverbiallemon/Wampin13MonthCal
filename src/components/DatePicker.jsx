@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline'
+import { ChevronLeftIcon, ChevronRightIcon, ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/24/outline'
 import { monthNames as thirteenMonthNames, getDaysInMonth, isLeapYear } from '../utils/calendarData'
 import { getCurrentDate13Month } from '../utils/dateConversion'
 
@@ -21,6 +21,7 @@ function DatePicker({
   const [viewMode, setViewMode] = useState('days') // 'days', 'months', 'years'
   const [tempMonth, setTempMonth] = useState(selectedMonth)
   const [tempYear, setTempYear] = useState(selectedYear)
+  const [yearRangeStart, setYearRangeStart] = useState(selectedYear - 5)
   
   const isDark = theme === 'dark' || theme === 'blackice'
   const isBlackIce = theme === 'blackice'
@@ -31,6 +32,7 @@ function DatePicker({
   useEffect(() => {
     setTempMonth(selectedMonth)
     setTempYear(selectedYear)
+    setYearRangeStart(selectedYear - 5)
     setViewMode('days')
   }, [selectedMonth, selectedYear, isOpen])
 
@@ -41,11 +43,31 @@ function DatePicker({
       }
     }
 
+    const handleKeyDown = (event) => {
+      if (!isOpen) return
+      
+      if (event.key === 'Escape') {
+        onClose()
+      } else if (viewMode === 'years') {
+        if (event.key === 'ArrowUp') {
+          event.preventDefault()
+          setYearRangeStart(yearRangeStart - 12)
+        } else if (event.key === 'ArrowDown') {
+          event.preventDefault()
+          setYearRangeStart(yearRangeStart + 12)
+        }
+      }
+    }
+
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside)
-      return () => document.removeEventListener('mousedown', handleClickOutside)
+      document.addEventListener('keydown', handleKeyDown)
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside)
+        document.removeEventListener('keydown', handleKeyDown)
+      }
     }
-  }, [isOpen, onClose])
+  }, [isOpen, onClose, viewMode, yearRangeStart])
 
   const getDaysInGregorianMonth = (month, year) => {
     return new Date(year, month, 0).getDate()
@@ -102,37 +124,82 @@ function DatePicker({
   }
 
   const renderYearPicker = () => {
-    const currentYear = tempYear
-    const startYear = currentYear - 5
     const years = []
     
     for (let i = 0; i < 12; i++) {
-      years.push(startYear + i)
+      years.push(yearRangeStart + i)
     }
 
     return (
-      <div className="grid grid-cols-3 gap-2 p-4">
-        {years.map(year => (
+      <div className="relative">
+        {/* Year range indicator and up navigation */}
+        <div className="flex items-center justify-between px-4 py-2">
           <button
-            key={year}
-            onClick={() => handleYearChange(year)}
-            className={`py-3 px-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-              year === tempYear
-                ? isBlackIce
-                  ? 'bg-cyan-500/30 text-cyan-100 border border-cyan-400/50'
-                  : isDark
-                  ? 'bg-purple-500/30 text-white border border-purple-400/50'
-                  : 'bg-purple-500/20 text-purple-700 border border-purple-400/50'
-                : isBlackIce
-                ? 'hover:bg-cyan-500/10 text-cyan-200/80 hover:text-cyan-100'
+            onClick={() => setYearRangeStart(new Date().getFullYear() - 5)}
+            className={`text-xs font-medium px-2 py-1 rounded transition-all duration-200 ${
+              isBlackIce 
+                ? 'text-cyan-300/60 hover:text-cyan-300 hover:bg-cyan-500/10' 
+                : isDark 
+                ? 'text-white/60 hover:text-white hover:bg-white/10' 
+                : 'text-gray-500 hover:text-gray-700 hover:bg-purple-50'
+            }`}
+            title="Jump to current year"
+          >
+            {yearRangeStart} - {yearRangeStart + 11}
+          </button>
+          <button
+            onClick={() => setYearRangeStart(yearRangeStart - 12)}
+            className={`p-1.5 rounded-lg backdrop-blur-md transition-all duration-200 border shadow-md ${
+              isBlackIce
+                ? 'bg-cyan-500/10 hover:bg-cyan-500/20 border-cyan-500/20 text-cyan-300'
                 : isDark
-                ? 'hover:bg-white/10 text-white/80 hover:text-white'
-                : 'hover:bg-purple-100 text-gray-700 hover:text-purple-700'
+                ? 'bg-white/10 hover:bg-white/20 border-white/20 text-white'
+                : 'bg-purple-50 hover:bg-purple-100 border-purple-200 text-gray-700'
             }`}
           >
-            {year}
+            <ChevronUpIcon className="w-4 h-4" />
           </button>
-        ))}
+        </div>
+
+        <div className="grid grid-cols-3 gap-2 px-4">
+          {years.map(year => (
+            <button
+              key={year}
+              onClick={() => handleYearChange(year)}
+              className={`py-3 px-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                year === tempYear
+                  ? isBlackIce
+                    ? 'bg-cyan-500/30 text-cyan-100 border border-cyan-400/50'
+                    : isDark
+                    ? 'bg-purple-500/30 text-white border border-purple-400/50'
+                    : 'bg-purple-500/20 text-purple-700 border border-purple-400/50'
+                  : isBlackIce
+                  ? 'hover:bg-cyan-500/10 text-cyan-200/80 hover:text-cyan-100'
+                  : isDark
+                  ? 'hover:bg-white/10 text-white/80 hover:text-white'
+                  : 'hover:bg-purple-100 text-gray-700 hover:text-purple-700'
+              }`}
+            >
+              {year}
+            </button>
+          ))}
+        </div>
+
+        {/* Down navigation button */}
+        <div className="flex justify-center p-2">
+          <button
+            onClick={() => setYearRangeStart(yearRangeStart + 12)}
+            className={`p-1.5 rounded-lg backdrop-blur-md transition-all duration-200 border shadow-md ${
+              isBlackIce
+                ? 'bg-cyan-500/10 hover:bg-cyan-500/20 border-cyan-500/20 text-cyan-300'
+                : isDark
+                ? 'bg-white/10 hover:bg-white/20 border-white/20 text-white'
+                : 'bg-purple-50 hover:bg-purple-100 border-purple-200 text-gray-700'
+            }`}
+          >
+            <ChevronDownIcon className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     )
   }
