@@ -75,7 +75,7 @@ function GregorianCalendar({ theme, selectedMonth, selectedYear, setSelectedMont
     return null
   }
 
-  const renderDay = (dayNum) => {
+  const renderDay = (dayNum, index) => {
     if (dayNum === 0) {
       return <div key={`empty-${Math.random()}`} className="aspect-square" />
     }
@@ -96,6 +96,11 @@ function GregorianCalendar({ theme, selectedMonth, selectedYear, setSelectedMont
         day: dayNum
       })
     }
+    
+    // Determine tooltip position based on day position
+    const dayOfWeek = index % 7
+    const isLeftEdge = dayOfWeek < 2
+    const isRightEdge = dayOfWeek > 4
 
     return (
       <div 
@@ -149,13 +154,17 @@ function GregorianCalendar({ theme, selectedMonth, selectedYear, setSelectedMont
         )}
         
         {hoveredDate?.day === dayNum && (
-          <div className="absolute z-20 bottom-full left-1/2 transform -translate-x-1/2 mb-3 px-4 py-3 backdrop-blur-xl bg-black/70 text-white text-sm rounded-xl whitespace-nowrap border border-white/20 shadow-xl">
+          <div className={`absolute z-20 bottom-full mb-3 px-4 py-3 backdrop-blur-xl bg-black/70 text-white text-sm rounded-xl whitespace-nowrap border border-white/20 shadow-xl ${
+            isLeftEdge ? 'left-0' : isRightEdge ? 'right-0' : 'left-1/2 transform -translate-x-1/2'
+          }`}>
             <div className="font-bold text-white">{holiday.name}</div>
             <div className="text-white/80 text-xs mt-1">{holiday.description}</div>
             <div className="text-white/60 text-xs mt-1">
               {thirteenMonthNames[holiday.thirteenMonthDate.month - 1]} {holiday.thirteenMonthDate.day}
             </div>
-            <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-black/70"></div>
+            <div className={`absolute top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-black/70 ${
+              isLeftEdge ? 'left-4' : isRightEdge ? 'right-4' : 'left-1/2 transform -translate-x-1/2'
+            }`}></div>
           </div>
         )}
       </div>
@@ -167,12 +176,12 @@ function GregorianCalendar({ theme, selectedMonth, selectedYear, setSelectedMont
   
   // Add empty cells for days before month starts
   for (let i = 0; i < firstDayOfMonth; i++) {
-    calendarDays.push(renderDay(0))
+    calendarDays.push(renderDay(0, i))
   }
   
   // Add all days of the month
   for (let i = 1; i <= daysInMonth; i++) {
-    calendarDays.push(renderDay(i))
+    calendarDays.push(renderDay(i, firstDayOfMonth + i - 1))
   }
 
   return (
