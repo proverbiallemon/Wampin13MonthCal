@@ -132,8 +132,8 @@ function DatePicker({
 
     return (
       <div className="relative">
-        {/* Year range indicator and up navigation */}
-        <div className="flex items-center justify-between px-4 py-2">
+        {/* Year range indicator */}
+        <div className="flex justify-center px-4 py-2">
           <button
             onClick={() => setYearRangeStart(new Date().getFullYear() - 5)}
             className={`text-xs font-medium px-2 py-1 rounded transition-all duration-200 ${
@@ -146,18 +146,6 @@ function DatePicker({
             title="Jump to current year"
           >
             {yearRangeStart} - {yearRangeStart + 11}
-          </button>
-          <button
-            onClick={() => setYearRangeStart(yearRangeStart - 12)}
-            className={`p-1.5 rounded-lg backdrop-blur-md transition-all duration-200 border shadow-md ${
-              isBlackIce
-                ? 'bg-cyan-500/10 hover:bg-cyan-500/20 border-cyan-500/20 text-cyan-300'
-                : isDark
-                ? 'bg-white/10 hover:bg-white/20 border-white/20 text-white'
-                : 'bg-purple-50 hover:bg-purple-100 border-purple-200 text-gray-700'
-            }`}
-          >
-            <ChevronUpIcon className="w-4 h-4" />
           </button>
         </div>
 
@@ -185,17 +173,31 @@ function DatePicker({
           ))}
         </div>
 
-        {/* Down navigation button */}
-        <div className="flex justify-center p-2">
+        {/* Navigation buttons */}
+        <div className="flex justify-center gap-2 p-3">
           <button
-            onClick={() => setYearRangeStart(yearRangeStart + 12)}
-            className={`p-1.5 rounded-lg backdrop-blur-md transition-all duration-200 border shadow-md ${
+            onClick={() => setYearRangeStart(yearRangeStart - 12)}
+            className={`p-2 rounded-lg backdrop-blur-md transition-all duration-200 border shadow-md ${
               isBlackIce
                 ? 'bg-cyan-500/10 hover:bg-cyan-500/20 border-cyan-500/20 text-cyan-300'
                 : isDark
                 ? 'bg-white/10 hover:bg-white/20 border-white/20 text-white'
                 : 'bg-purple-50 hover:bg-purple-100 border-purple-200 text-gray-700'
             }`}
+            title="Previous 12 years"
+          >
+            <ChevronUpIcon className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setYearRangeStart(yearRangeStart + 12)}
+            className={`p-2 rounded-lg backdrop-blur-md transition-all duration-200 border shadow-md ${
+              isBlackIce
+                ? 'bg-cyan-500/10 hover:bg-cyan-500/20 border-cyan-500/20 text-cyan-300'
+                : isDark
+                ? 'bg-white/10 hover:bg-white/20 border-white/20 text-white'
+                : 'bg-purple-50 hover:bg-purple-100 border-purple-200 text-gray-700'
+            }`}
+            title="Next 12 years"
           >
             <ChevronDownIcon className="w-4 h-4" />
           </button>
