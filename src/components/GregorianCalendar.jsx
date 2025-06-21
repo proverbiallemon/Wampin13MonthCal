@@ -9,6 +9,7 @@ import {
 } from '@heroicons/react/24/outline'
 import { holidays, monthNames as thirteenMonthNames } from '../utils/calendarData'
 import { gregorianTo13Month, thirteenMonthToGregorian } from '../utils/dateConversion'
+import DatePicker from './DatePicker'
 
 const gregorianMonthNames = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -23,7 +24,7 @@ const getFirstDayOfMonth = (month, year) => {
   return new Date(year, month - 1, 1).getDay()
 }
 
-function GregorianCalendar({ theme, selectedMonth, selectedYear, setSelectedMonth, setSelectedYear, onModeSwitch, setTheme }) {
+function GregorianCalendar({ theme, selectedMonth, selectedYear, setSelectedMonth, setSelectedYear, onModeSwitch, setTheme, isDatePickerOpen, setIsDatePickerOpen }) {
   const [hoveredDate, setHoveredDate] = useState(null)
   const [selectedDate, setSelectedDate] = useState(null)
   
@@ -184,6 +185,18 @@ function GregorianCalendar({ theme, selectedMonth, selectedYear, setSelectedMont
     calendarDays.push(renderDay(i, firstDayOfMonth + i - 1))
   }
 
+  const handleDatePickerSelect = (month, year, day) => {
+    setSelectedMonth(month)
+    setSelectedYear(year)
+    if (day) {
+      setSelectedDate({
+        year: year,
+        month: month,
+        day: day
+      })
+    }
+  }
+
   return (
     <>
       <div className="flex items-center justify-between mb-8">
@@ -202,16 +215,23 @@ function GregorianCalendar({ theme, selectedMonth, selectedYear, setSelectedMont
           }`} />
         </button>
         
-        <div className="text-center flex-1">
+        <div className="text-center flex-1 relative">
           <div className="flex items-center justify-center gap-3">
-            <h2 className={`text-3xl font-bold flex items-center justify-center gap-3 drop-shadow-lg ${
-              isBlackIce ? 'text-cyan-100' : isDark ? 'text-white' : 'text-gray-800'
-            }`}>
+            <button
+              onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
+              className={`text-3xl font-bold flex items-center justify-center gap-3 drop-shadow-lg transition-all duration-200 rounded-xl px-4 py-2 ${
+                isBlackIce 
+                  ? 'text-cyan-100 hover:bg-cyan-500/10' 
+                  : isDark 
+                  ? 'text-white hover:bg-white/10' 
+                  : 'text-gray-800 hover:bg-purple-100'
+              }`}
+            >
               <CalendarIcon className={`w-8 h-8 ${
                 isBlackIce ? 'text-cyan-400' : isDark ? 'text-purple-300' : 'text-purple-600'
               }`} />
               {gregorianMonthNames[selectedMonth - 1]} {selectedYear}
-            </h2>
+            </button>
             
             {/* Calendar Mode Toggle Button */}
             <button
@@ -262,6 +282,17 @@ function GregorianCalendar({ theme, selectedMonth, selectedYear, setSelectedMont
               )}
             </button>
           </div>
+          
+          {/* Date Picker Dropdown */}
+          <DatePicker
+            isOpen={isDatePickerOpen}
+            onClose={() => setIsDatePickerOpen(false)}
+            selectedMonth={selectedMonth}
+            selectedYear={selectedYear}
+            onDateSelect={handleDatePickerSelect}
+            calendarMode="gregorian"
+            theme={theme}
+          />
           
           <p className={`text-sm mt-2 ${
             isBlackIce ? 'text-cyan-200/70' : isDark ? 'text-white/70' : 'text-gray-600'

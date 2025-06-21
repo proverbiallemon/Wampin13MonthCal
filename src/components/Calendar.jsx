@@ -10,6 +10,7 @@ import {
 import { monthNames, holidays, getDaysInMonth } from '../utils/calendarData'
 import { getCurrentDate13Month, isSameDate13Month, thirteenMonthToGregorian, gregorianTo13Month } from '../utils/dateConversion'
 import GregorianCalendar from './GregorianCalendar'
+import DatePicker from './DatePicker'
 
 function Calendar({ theme, setTheme }) {
   const currentDate13Month = getCurrentDate13Month()
@@ -27,6 +28,7 @@ function Calendar({ theme, setTheme }) {
   const [selectedDate, setSelectedDate] = useState(null)
   const [calendarMode, setCalendarMode] = useState('13month') // '13month' or 'gregorian'
   const [isTransitioning, setIsTransitioning] = useState(false)
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false)
   
   const isDark = theme === 'dark' || theme === 'blackice'
   const isBlackIce = theme === 'blackice'
@@ -74,6 +76,30 @@ function Calendar({ theme, setTheme }) {
         setSelectedYear13(selectedYear13 + 1)
       } else {
         setSelectedMonth13(selectedMonth13 + 1)
+      }
+    }
+  }
+
+  const handleDatePickerSelect = (month, year, day) => {
+    if (calendarMode === '13month') {
+      setSelectedMonth13(month)
+      setSelectedYear13(year)
+      if (day) {
+        setSelectedDate({
+          year: year,
+          month: month,
+          day: day
+        })
+      }
+    } else {
+      setSelectedMonthGreg(month)
+      setSelectedYearGreg(year)
+      if (day) {
+        setSelectedDate({
+          year: year,
+          month: month,
+          day: day
+        })
       }
     }
   }
@@ -203,16 +229,23 @@ function Calendar({ theme, setTheme }) {
             }`} />
           </button>
           
-          <div className="text-center flex-1">
+          <div className="text-center flex-1 relative">
             <div className="flex items-center justify-center gap-3">
-              <h2 className={`text-3xl font-bold flex items-center justify-center gap-3 drop-shadow-lg ${
-                isBlackIce ? 'text-cyan-100' : isDark ? 'text-white' : 'text-gray-800'
-              }`}>
+              <button
+                onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
+                className={`text-3xl font-bold flex items-center justify-center gap-3 drop-shadow-lg transition-all duration-200 rounded-xl px-4 py-2 ${
+                  isBlackIce 
+                    ? 'text-cyan-100 hover:bg-cyan-500/10' 
+                    : isDark 
+                    ? 'text-white hover:bg-white/10' 
+                    : 'text-gray-800 hover:bg-purple-100'
+                }`}
+              >
                 <CalendarIcon className={`w-8 h-8 ${
                   isBlackIce ? 'text-cyan-400' : isDark ? 'text-purple-300' : 'text-purple-600'
                 }`} />
                 {monthNames[selectedMonth13 - 1]} {selectedYear13}
-              </h2>
+              </button>
               
               {/* Calendar Mode Toggle Button */}
               <button
@@ -263,6 +296,17 @@ function Calendar({ theme, setTheme }) {
                 )}
               </button>
             </div>
+            
+            {/* Date Picker Dropdown */}
+            <DatePicker
+              isOpen={isDatePickerOpen}
+              onClose={() => setIsDatePickerOpen(false)}
+              selectedMonth={selectedMonth13}
+              selectedYear={selectedYear13}
+              onDateSelect={handleDatePickerSelect}
+              calendarMode="13month"
+              theme={theme}
+            />
             
             <p className={`text-sm mt-2 ${
               isBlackIce ? 'text-cyan-200/70' : isDark ? 'text-white/70' : 'text-gray-600'
@@ -426,6 +470,8 @@ function Calendar({ theme, setTheme }) {
             setSelectedYear={setSelectedYearGreg}
             onModeSwitch={handleModeSwitch}
             setTheme={setTheme}
+            isDatePickerOpen={isDatePickerOpen}
+            setIsDatePickerOpen={setIsDatePickerOpen}
           />
         )}
       </div>
