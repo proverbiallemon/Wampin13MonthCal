@@ -60,10 +60,19 @@ npm run typecheck
 │   ├── App.jsx        # Main application component
 │   ├── main.jsx       # Application entry point
 │   └── index.css      # Global styles with Tailwind directives
+├── functions/
+│   └── api/           # Cloudflare Pages Functions (serverless API)
+│       ├── auth/
+│       │   └── google.js  # Google OAuth handler
+│       └── calendar.js    # Google Calendar API proxy
+├── scripts/
+│   └── dev-with-functions.sh  # Local dev with Wrangler + Vite
 ├── public/            # Static assets
 ├── index.html         # HTML entry point
 ├── vite.config.js     # Vite configuration
 ├── tailwind.config.js # Tailwind CSS configuration
+├── wrangler.toml      # Cloudflare Pages/Wrangler configuration
+├── .dev.vars.example  # Template for local dev secrets
 └── package.json       # Project dependencies and scripts
 ```
 

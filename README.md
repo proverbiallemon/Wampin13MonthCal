@@ -44,6 +44,12 @@ A modern web application featuring a unique 13-month calendar system with glassm
 - Holiday indicators with tooltips
 - Responsive design
 
+### Google Calendar Integration
+- **Sync with Google Calendar** - View your Google Calendar events
+- **OAuth Authentication** - Secure sign-in with Google
+- **Event Indicators** - Visual dots on days with events
+- **Privacy-First** - Read-only access, credentials stored locally
+
 ## 🚀 Live Demo
 
 Visit the live application: [https://wampin-13-month-calendar.pages.dev](https://wampin-13-month-calendar.pages.dev)
@@ -55,6 +61,8 @@ Visit the live application: [https://wampin-13-month-calendar.pages.dev](https:/
 - **Tailwind CSS v4** - Styling
 - **Heroicons** - Icon library
 - **Cloudflare Pages** - Hosting
+- **Cloudflare Functions** - Serverless backend
+- **Google Calendar API** - Event synchronization
 
 ## 📅 Month Names
 
@@ -163,6 +171,10 @@ This project automatically deploys to Cloudflare Pages when pushing to the main 
    - `CLOUDFLARE_API_TOKEN`
    - `CLOUDFLARE_ACCOUNT_ID`
 3. Push to main branch to trigger deployment
+
+### Google Calendar Integration:
+
+To enable Google Calendar sync, see [Google Calendar Setup Guide](docs/google-calendar-setup.md)
 
 ## 📄 License
 
