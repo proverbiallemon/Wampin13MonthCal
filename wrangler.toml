@@ -13,8 +13,3 @@ directory = "dist"
 # For local development, create a .dev.vars file with:
 # GOOGLE_CLIENT_ID=your-google-client-id
 # GOOGLE_CLIENT_SECRET=your-google-client-secret
-
-# Pages Functions configuration
-[[routes]]
-pattern = "/api/*"
-zone_name = ""
