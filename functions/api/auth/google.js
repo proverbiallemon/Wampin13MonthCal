@@ -1,7 +1,7 @@
 // Google OAuth handler for Cloudflare Pages
 export async function onRequestGet(context) {
-  const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET } = context.env
-  
+  const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI } = context.env
+
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Content-Type': 'application/json',
@@ -11,17 +11,21 @@ export async function onRequestGet(context) {
   const code = url.searchParams.get('code')
   const action = url.searchParams.get('action')
 
+  // Allow env var override for local dev; fall back to origin-based URI
+  const redirectUri = GOOGLE_REDIRECT_URI || `${url.origin}/api/auth/google`
+
   // If no code, initiate OAuth flow
   if (!code && action === 'login') {
-    const redirectUri = `${url.origin}/api/auth/google`
+    const state = url.searchParams.get('state') || ''
     const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth')
-    
+
     authUrl.searchParams.set('client_id', GOOGLE_CLIENT_ID)
     authUrl.searchParams.set('redirect_uri', redirectUri)
     authUrl.searchParams.set('response_type', 'code')
     authUrl.searchParams.set('scope', 'https://www.googleapis.com/auth/calendar.readonly email')
-    authUrl.searchParams.set('access_type', 'offline')
-    authUrl.searchParams.set('prompt', 'consent')
+    if (state) {
+      authUrl.searchParams.set('state', state)
+    }
 
     return Response.redirect(authUrl.toString(), 302)
   }
@@ -29,8 +33,6 @@ export async function onRequestGet(context) {
   // If we have a code, exchange it for tokens
   if (code) {
     try {
-      const redirectUri = `${url.origin}/api/auth/google`
-      
       const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
         method: 'POST',
         headers: {
@@ -50,23 +52,31 @@ export async function onRequestGet(context) {
       }
 
       const tokens = await tokenResponse.json()
-      
-      // Redirect back to app with tokens in URL fragment (for client-side storage)
+
+      // Only pass access_token back to the client (no refresh token)
       const appUrl = new URL(url.origin)
-      appUrl.hash = `access_token=${tokens.access_token}&refresh_token=${tokens.refresh_token || ''}`
-      
+      const hashParts = [`access_token=${encodeURIComponent(tokens.access_token)}`]
+
+      // Echo back the state parameter for client-side CSRF verification
+      const state = url.searchParams.get('state')
+      if (state) {
+        hashParts.push(`state=${encodeURIComponent(state)}`)
+      }
+
+      appUrl.hash = hashParts.join('&')
+
       return Response.redirect(appUrl.toString(), 302)
-      
+
     } catch (error) {
       return new Response(
-        JSON.stringify({ error: 'Authentication failed', message: error.message }), 
+        JSON.stringify({ error: 'Authentication failed', message: error.message }),
         { status: 500, headers }
       )
     }
   }
 
   return new Response(
-    JSON.stringify({ error: 'Invalid request' }), 
+    JSON.stringify({ error: 'Invalid request' }),
     { status: 400, headers }
   )
 }
