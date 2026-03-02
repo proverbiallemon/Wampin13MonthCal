@@ -10,6 +10,7 @@ import {
 import { holidays, monthNames as thirteenMonthNames } from '../utils/calendarData'
 import { gregorianTo13Month, thirteenMonthToGregorian } from '../utils/dateConversion'
 import DatePicker from './DatePicker'
+import { useGregorianEventLookup, getEventsForDay, getEventTimeDisplay } from '../hooks/useEventHelpers'
 
 const gregorianMonthNames = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -24,12 +25,14 @@ const getFirstDayOfMonth = (month, year) => {
   return new Date(year, month - 1, 1).getDay()
 }
 
-function GregorianCalendar({ theme, selectedMonth, selectedYear, setSelectedMonth, setSelectedYear, onModeSwitch, setTheme, isDatePickerOpen, setIsDatePickerOpen }) {
+function GregorianCalendar({ theme, selectedMonth, selectedYear, setSelectedMonth, setSelectedYear, onModeSwitch, setTheme, isDatePickerOpen, setIsDatePickerOpen, googleEvents, onSelectEvent }) {
   const [hoveredDate, setHoveredDate] = useState(null)
   const [selectedDate, setSelectedDate] = useState(null)
-  
+
   const isDark = theme === 'dark' || theme === 'blackice'
   const isBlackIce = theme === 'blackice'
+
+  const eventLookup = useGregorianEventLookup(googleEvents || [])
   
   const today = new Date()
   const currentMonth = today.getMonth() + 1
@@ -80,14 +83,18 @@ function GregorianCalendar({ theme, selectedMonth, selectedYear, setSelectedMont
     if (dayNum === 0) {
       return <div key={`empty-${Math.random()}`} className="aspect-square" />
     }
-    
+
     const holiday = getHolidayForGregorianDate(selectedYear, selectedMonth, dayNum)
     const Icon = holiday?.icon
-    
+
+    // Look up Google Calendar events for this Gregorian day
+    const dayEvents = getEventsForDay(eventLookup, selectedYear, selectedMonth, dayNum)
+    const hasGoogleEvent = dayEvents.length > 0
+
     const isToday = currentYear === selectedYear && currentMonth === selectedMonth && currentDay === dayNum
-    const isSelected = selectedDate && 
-      selectedDate.year === selectedYear && 
-      selectedDate.month === selectedMonth && 
+    const isSelected = selectedDate &&
+      selectedDate.year === selectedYear &&
+      selectedDate.month === selectedMonth &&
       selectedDate.day === dayNum
 
     const handleClick = () => {
@@ -97,48 +104,48 @@ function GregorianCalendar({ theme, selectedMonth, selectedYear, setSelectedMont
         day: dayNum
       })
     }
-    
+
     // Determine tooltip position based on day position
     const dayOfWeek = index % 7
     const isLeftEdge = dayOfWeek < 2
     const isRightEdge = dayOfWeek > 4
 
     return (
-      <div 
-        key={dayNum} 
+      <div
+        key={dayNum}
         className={`
-          aspect-square flex flex-col items-center justify-center 
+          aspect-square flex flex-col items-center justify-center
           backdrop-blur-md rounded-xl transition-all duration-300 cursor-pointer relative group
           ${isBlackIce ? (
-            isToday ? 'bg-gradient-to-br from-cyan-400/30 to-blue-400/30 border-2 border-cyan-400/40 shadow-lg shadow-cyan-500/20' : 
+            isToday ? 'bg-gradient-to-br from-cyan-400/30 to-blue-400/30 border-2 border-cyan-400/40 shadow-lg shadow-cyan-500/20' :
             isSelected ? 'bg-gradient-to-br from-emerald-400/30 to-teal-400/30 border-2 border-emerald-400/40 shadow-lg shadow-emerald-500/20' :
             'bg-slate-800/40 border border-cyan-500/10 hover:bg-slate-700/50 hover:border-cyan-400/20 hover:shadow-lg hover:shadow-cyan-500/10'
           ) : isDark ? (
-            isToday ? 'bg-gradient-to-br from-blue-400/40 to-cyan-400/40 border-2 border-blue-300/50 shadow-lg shadow-blue-500/25' : 
+            isToday ? 'bg-gradient-to-br from-blue-400/40 to-cyan-400/40 border-2 border-blue-300/50 shadow-lg shadow-blue-500/25' :
             isSelected ? 'bg-gradient-to-br from-green-400/40 to-emerald-400/40 border-2 border-green-300/50 shadow-lg shadow-green-500/25' :
             'bg-white/10 border border-white/20 hover:bg-white/20 hover:border-white/30 hover:shadow-lg hover:shadow-white/10'
           ) : (
-            isToday ? 'bg-gradient-to-br from-blue-500/50 to-cyan-500/50 border-2 border-blue-400/70 shadow-lg shadow-blue-500/30' : 
+            isToday ? 'bg-gradient-to-br from-blue-500/50 to-cyan-500/50 border-2 border-blue-400/70 shadow-lg shadow-blue-500/30' :
             isSelected ? 'bg-gradient-to-br from-green-500/50 to-emerald-500/50 border-2 border-green-400/70 shadow-lg shadow-green-500/30' :
             'bg-white/60 border border-gray-300/50 hover:bg-white/80 hover:border-gray-400/60 hover:shadow-lg'
           )}
         `}
         onClick={handleClick}
-        onMouseEnter={() => holiday && setHoveredDate({ day: dayNum, holiday })}
+        onMouseEnter={() => (holiday || hasGoogleEvent) && setHoveredDate({ day: dayNum, holiday, events: dayEvents })}
         onMouseLeave={() => setHoveredDate(null)}
       >
         <span className={`text-lg font-medium transition-all duration-300 ${
           isBlackIce ? (
-            isToday ? 'text-cyan-100 font-bold drop-shadow-lg' : 
-            isSelected ? 'text-emerald-100 font-bold drop-shadow-lg' : 
+            isToday ? 'text-cyan-100 font-bold drop-shadow-lg' :
+            isSelected ? 'text-emerald-100 font-bold drop-shadow-lg' :
             'text-cyan-200/90 group-hover:text-cyan-100 group-hover:scale-110'
           ) : isDark ? (
-            isToday ? 'text-white font-bold drop-shadow-lg' : 
-            isSelected ? 'text-white font-bold drop-shadow-lg' : 
+            isToday ? 'text-white font-bold drop-shadow-lg' :
+            isSelected ? 'text-white font-bold drop-shadow-lg' :
             'text-white/90 group-hover:text-white group-hover:scale-110'
           ) : (
-            isToday ? 'text-white font-bold drop-shadow' : 
-            isSelected ? 'text-white font-bold drop-shadow' : 
+            isToday ? 'text-white font-bold drop-shadow' :
+            isSelected ? 'text-white font-bold drop-shadow' :
             'text-gray-700 group-hover:text-gray-900 group-hover:scale-110'
           )
         }`}>
@@ -146,23 +153,47 @@ function GregorianCalendar({ theme, selectedMonth, selectedYear, setSelectedMont
         </span>
         {Icon && (
           <Icon className={`w-5 h-5 absolute bottom-2 drop-shadow-lg transition-all duration-300 group-hover:scale-110 ${
-            isBlackIce 
+            isBlackIce
               ? (isToday || isSelected ? 'text-cyan-200/90' : 'text-cyan-300/80')
-              : isDark 
+              : isDark
               ? (isToday || isSelected ? 'text-white/90' : holiday.color.replace('text-', 'text-white/90'))
               : (isToday || isSelected ? 'text-white/90' : holiday.color)
           }`} />
         )}
-        
+
+        {/* Google Calendar event indicator */}
+        {hasGoogleEvent && (
+          <div className={`absolute top-1 right-1 w-2 h-2 rounded-full ${
+            isBlackIce
+              ? 'bg-cyan-400 shadow-cyan-400/50'
+              : isDark
+              ? 'bg-purple-400 shadow-purple-400/50'
+              : 'bg-purple-600 shadow-purple-600/50'
+          } shadow-lg`}></div>
+        )}
+
         {hoveredDate?.day === dayNum && (
-          <div className={`absolute z-20 bottom-full mb-3 px-4 py-3 backdrop-blur-xl bg-black/70 text-white text-sm rounded-xl whitespace-nowrap border border-white/20 shadow-xl ${
+          <div className={`absolute z-20 bottom-full mb-3 px-4 py-3 backdrop-blur-xl bg-black/70 text-white text-sm rounded-xl border border-white/20 shadow-xl max-w-[250px] ${
             isLeftEdge ? 'left-0' : isRightEdge ? 'right-0' : 'left-1/2 transform -translate-x-1/2'
           }`}>
-            <div className="font-bold text-white">{holiday.name}</div>
-            <div className="text-white/80 text-xs mt-1">{holiday.description}</div>
-            <div className="text-white/60 text-xs mt-1">
-              {thirteenMonthNames[holiday.thirteenMonthDate.month - 1]} {holiday.thirteenMonthDate.day}
-            </div>
+            {holiday && (
+              <>
+                <div className="font-bold text-white">{holiday.name}</div>
+                <div className="text-white/80 text-xs mt-1">{holiday.description}</div>
+                <div className="text-white/60 text-xs mt-1">
+                  {thirteenMonthNames[holiday.thirteenMonthDate.month - 1]} {holiday.thirteenMonthDate.day}
+                </div>
+              </>
+            )}
+            {holiday && hoveredDate.events?.length > 0 && (
+              <div className="border-t border-white/20 my-2" />
+            )}
+            {hoveredDate.events?.map((evt, i) => (
+              <div key={evt.id || i} className={i > 0 ? 'mt-1.5' : ''}>
+                <div className="font-semibold text-white truncate">{evt.summary || 'Untitled'}</div>
+                <div className="text-white/70 text-xs">{getEventTimeDisplay(evt)}</div>
+              </div>
+            ))}
             <div className={`absolute top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-black/70 ${
               isLeftEdge ? 'left-4' : isRightEdge ? 'right-4' : 'left-1/2 transform -translate-x-1/2'
             }`}></div>
@@ -369,29 +400,65 @@ function GregorianCalendar({ theme, selectedMonth, selectedYear, setSelectedMont
           })()}
         </p>
         
-        {selectedDate && (
-          <div className={`mt-4 pt-4 border-t ${isBlackIce ? 'border-cyan-500/20' : isDark ? 'border-white/20' : 'border-gray-300/30'}`}>
-            <p className={isBlackIce ? 'text-cyan-100' : isDark ? 'text-white/90' : 'text-gray-800'}>
-              Selected: <span className={`font-bold ${isBlackIce ? 'text-emerald-400' : isDark ? 'text-green-300' : 'text-green-600'}`}>
-                {gregorianMonthNames[selectedDate.month - 1]} {selectedDate.day}, {selectedDate.year}
-              </span>
-            </p>
-            <p className={`text-xs mt-1 ${isBlackIce ? 'text-cyan-200/60' : isDark ? 'text-white/60' : 'text-gray-600'}`}>
-              13-Month: {(() => {
-                try {
-                  const gregorianDate = new Date(selectedDate.year, selectedDate.month - 1, selectedDate.day)
-                  const thirteenMonth = gregorianTo13Month(gregorianDate)
-                  return `${thirteenMonthNames[thirteenMonth.month - 1]} ${thirteenMonth.day}, ${thirteenMonth.year}${
-                    thirteenMonth.isNewYearsDay ? " (New Year's Day)" : 
-                    thirteenMonth.isNewYearsLeap ? " (New Year's Leap)" : ""
-                  }`
-                } catch (e) {
-                  return 'Invalid date'
-                }
-              })()}
-            </p>
-          </div>
-        )}
+        {selectedDate && (() => {
+          const selectedDayEvents = getEventsForDay(eventLookup, selectedDate.year, selectedDate.month, selectedDate.day)
+          return (
+            <div className={`mt-4 pt-4 border-t ${isBlackIce ? 'border-cyan-500/20' : isDark ? 'border-white/20' : 'border-gray-300/30'}`}>
+              <p className={isBlackIce ? 'text-cyan-100' : isDark ? 'text-white/90' : 'text-gray-800'}>
+                Selected: <span className={`font-bold ${isBlackIce ? 'text-emerald-400' : isDark ? 'text-green-300' : 'text-green-600'}`}>
+                  {gregorianMonthNames[selectedDate.month - 1]} {selectedDate.day}, {selectedDate.year}
+                </span>
+              </p>
+              <p className={`text-xs mt-1 ${isBlackIce ? 'text-cyan-200/60' : isDark ? 'text-white/60' : 'text-gray-600'}`}>
+                13-Month: {(() => {
+                  try {
+                    const gregorianDate = new Date(selectedDate.year, selectedDate.month - 1, selectedDate.day)
+                    const thirteenMonth = gregorianTo13Month(gregorianDate)
+                    return `${thirteenMonthNames[thirteenMonth.month - 1]} ${thirteenMonth.day}, ${thirteenMonth.year}${
+                      thirteenMonth.isNewYearsDay ? " (New Year's Day)" :
+                      thirteenMonth.isNewYearsLeap ? " (New Year's Leap)" : ""
+                    }`
+                  } catch (e) {
+                    return 'Invalid date'
+                  }
+                })()}
+              </p>
+
+              {selectedDayEvents.length > 0 && (
+                <div className={`mt-3 pt-3 border-t ${isBlackIce ? 'border-cyan-500/20' : isDark ? 'border-white/15' : 'border-gray-200/50'}`}>
+                  <p className={`text-xs font-semibold mb-2 ${isBlackIce ? 'text-cyan-300/80' : isDark ? 'text-white/70' : 'text-gray-500'}`}>
+                    Events ({selectedDayEvents.length})
+                  </p>
+                  <div className="space-y-1.5">
+                    {selectedDayEvents.map((evt, i) => (
+                      <button
+                        key={evt.id || i}
+                        onClick={() => onSelectEvent && onSelectEvent(evt)}
+                        className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all duration-200 border ${
+                          isBlackIce
+                            ? 'bg-cyan-500/10 border-cyan-500/20 hover:bg-cyan-500/20 text-cyan-100'
+                            : isDark
+                            ? 'bg-white/5 border-white/10 hover:bg-white/10 text-white/90'
+                            : 'bg-white/50 border-gray-200/50 hover:bg-white/70 text-gray-800'
+                        }`}
+                      >
+                        <div className="font-medium truncate">{evt.summary || 'Untitled'}</div>
+                        <div className={`text-xs mt-0.5 flex items-center justify-between ${
+                          isBlackIce ? 'text-cyan-200/60' : isDark ? 'text-white/50' : 'text-gray-500'
+                        }`}>
+                          <span>{getEventTimeDisplay(evt)}</span>
+                          <span className={`${isBlackIce ? 'text-cyan-400/70' : isDark ? 'text-purple-300/70' : 'text-purple-500/70'}`}>
+                            View details
+                          </span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )
+        })()}
       </div>
     </>
   )

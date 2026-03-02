@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react'
-import { 
-  ChevronLeftIcon, 
+import {
+  ChevronLeftIcon,
   ChevronRightIcon,
   CalendarIcon,
   SunIcon,
   MoonIcon,
-  ArrowsRightLeftIcon
+  ArrowsRightLeftIcon,
+  ChevronDownIcon
 } from '@heroicons/react/24/outline'
 import { monthNames, holidays, getDaysInMonth } from '../utils/calendarData'
 import { getCurrentDate13Month, isSameDate13Month, thirteenMonthToGregorian, gregorianTo13Month } from '../utils/dateConversion'
@@ -13,6 +14,8 @@ import GregorianCalendar from './GregorianCalendar'
 import DatePicker from './DatePicker'
 import PerpetualDayIndicator from './PerpetualDayIndicator'
 import GoogleCalendarSync from './GoogleCalendarSync'
+import EventDetailModal from './EventDetailModal'
+import { useEventLookup, getEventsForDay, getEventTimeDisplay, getUpcomingEvents, getShort13MonthDate } from '../hooks/useEventHelpers'
 
 function Calendar({ theme, setTheme }) {
   const currentDate13Month = getCurrentDate13Month()
@@ -32,9 +35,13 @@ function Calendar({ theme, setTheme }) {
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false)
   const [googleEvents, setGoogleEvents] = useState([])
-  
+  const [selectedEvent, setSelectedEvent] = useState(null)
+  const [isAgendaOpen, setIsAgendaOpen] = useState(false)
+
   const isDark = theme === 'dark' || theme === 'blackice'
   const isBlackIce = theme === 'blackice'
+
+  const eventLookup = useEventLookup(googleEvents)
   
   // Handle calendar mode switching with date synchronization
   const handleModeSwitch = () => {
@@ -139,13 +146,9 @@ function Calendar({ theme, setTheme }) {
     const isLeftEdge = dayOfWeek < 2
     const isRightEdge = dayOfWeek > 4
     
-    // Check if this day has Google Calendar events
-    const hasGoogleEvent = googleEvents.some(event => {
-      if (!event.thirteenMonthStart) return false
-      return event.thirteenMonthStart.year === selectedYear13 &&
-             event.thirteenMonthStart.month === selectedMonth13 &&
-             event.thirteenMonthStart.day === dayNum
-    })
+    // Look up Google Calendar events for this day
+    const dayEvents = getEventsForDay(eventLookup, selectedYear13, selectedMonth13, dayNum)
+    const hasGoogleEvent = dayEvents.length > 0
 
     return (
       <div 
@@ -171,7 +174,7 @@ function Calendar({ theme, setTheme }) {
           )}
         `}
         onClick={handleClick}
-        onMouseEnter={() => holiday && setHoveredHoliday({ ...holiday, day: dayNum })}
+        onMouseEnter={() => (holiday || hasGoogleEvent) && setHoveredHoliday({ ...(holiday || {}), day: dayNum, events: dayEvents })}
         onMouseLeave={() => setHoveredHoliday(null)}
       >
         <span className={`text-lg font-medium transition-all duration-300 ${
@@ -216,11 +219,24 @@ function Calendar({ theme, setTheme }) {
         )}
         
         {hoveredHoliday?.day === dayNum && (
-          <div className={`absolute z-20 bottom-full mb-3 px-4 py-3 backdrop-blur-xl bg-black/70 text-white text-sm rounded-xl whitespace-nowrap border border-white/20 shadow-xl ${
+          <div className={`absolute z-20 bottom-full mb-3 px-4 py-3 backdrop-blur-xl bg-black/70 text-white text-sm rounded-xl border border-white/20 shadow-xl max-w-[250px] ${
             isLeftEdge ? 'left-0' : isRightEdge ? 'right-0' : 'left-1/2 transform -translate-x-1/2'
           }`}>
-            <div className="font-bold text-white">{holiday.name}</div>
-            <div className="text-white/80 text-xs mt-1">{holiday.description}</div>
+            {holiday && (
+              <>
+                <div className="font-bold text-white">{holiday.name}</div>
+                <div className="text-white/80 text-xs mt-1">{holiday.description}</div>
+              </>
+            )}
+            {holiday && hoveredHoliday.events?.length > 0 && (
+              <div className="border-t border-white/20 my-2" />
+            )}
+            {hoveredHoliday.events?.map((evt, i) => (
+              <div key={evt.id || i} className={`${i > 0 ? 'mt-1.5' : ''} ${holiday ? '' : i === 0 ? '' : ''}`}>
+                <div className="font-semibold text-white truncate">{evt.summary || 'Untitled'}</div>
+                <div className="text-white/70 text-xs">{getEventTimeDisplay(evt)}</div>
+              </div>
+            ))}
             <div className={`absolute top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-black/70 ${
               isLeftEdge ? 'left-4' : isRightEdge ? 'right-4' : 'left-1/2 transform -translate-x-1/2'
             }`}></div>
@@ -472,25 +488,61 @@ function Calendar({ theme, setTheme }) {
             })}
           </p>
           
-          {selectedDate && (
-            <div className={`mt-4 pt-4 border-t ${isBlackIce ? 'border-cyan-500/20' : isDark ? 'border-white/20' : 'border-gray-300/30'}`}>
-              <p className={isBlackIce ? 'text-cyan-100' : isDark ? 'text-white/90' : 'text-gray-800'}>
-                Selected: <span className={`font-bold ${isBlackIce ? 'text-emerald-400' : isDark ? 'text-green-300' : 'text-green-600'}`}>
-                  {monthNames[selectedDate.month - 1]} {selectedDate.day}, {selectedDate.year}
-                </span>
-                {selectedDate.month === 13 && selectedDate.day === 29 && " (New Year's Day)"}
-                {selectedDate.month === 13 && selectedDate.day === 30 && " (New Year's Leap)"}
-              </p>
-              <p className={`text-xs mt-1 ${isBlackIce ? 'text-cyan-200/60' : isDark ? 'text-white/60' : 'text-gray-600'}`}>
-                Gregorian: {thirteenMonthToGregorian(selectedDate.year, selectedDate.month, selectedDate.day).toLocaleDateString('en-US', { 
-                  weekday: 'long', 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
-                })}
-              </p>
-            </div>
-          )}
+          {selectedDate && (() => {
+            const selectedDayEvents = getEventsForDay(eventLookup, selectedDate.year, selectedDate.month, selectedDate.day)
+            return (
+              <div className={`mt-4 pt-4 border-t ${isBlackIce ? 'border-cyan-500/20' : isDark ? 'border-white/20' : 'border-gray-300/30'}`}>
+                <p className={isBlackIce ? 'text-cyan-100' : isDark ? 'text-white/90' : 'text-gray-800'}>
+                  Selected: <span className={`font-bold ${isBlackIce ? 'text-emerald-400' : isDark ? 'text-green-300' : 'text-green-600'}`}>
+                    {monthNames[selectedDate.month - 1]} {selectedDate.day}, {selectedDate.year}
+                  </span>
+                  {selectedDate.month === 13 && selectedDate.day === 29 && " (New Year's Day)"}
+                  {selectedDate.month === 13 && selectedDate.day === 30 && " (New Year's Leap)"}
+                </p>
+                <p className={`text-xs mt-1 ${isBlackIce ? 'text-cyan-200/60' : isDark ? 'text-white/60' : 'text-gray-600'}`}>
+                  Gregorian: {thirteenMonthToGregorian(selectedDate.year, selectedDate.month, selectedDate.day).toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })}
+                </p>
+
+                {selectedDayEvents.length > 0 && (
+                  <div className={`mt-3 pt-3 border-t ${isBlackIce ? 'border-cyan-500/20' : isDark ? 'border-white/15' : 'border-gray-200/50'}`}>
+                    <p className={`text-xs font-semibold mb-2 ${isBlackIce ? 'text-cyan-300/80' : isDark ? 'text-white/70' : 'text-gray-500'}`}>
+                      Events ({selectedDayEvents.length})
+                    </p>
+                    <div className="space-y-1.5">
+                      {selectedDayEvents.map((evt, i) => (
+                        <button
+                          key={evt.id || i}
+                          onClick={() => setSelectedEvent(evt)}
+                          className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all duration-200 border ${
+                            isBlackIce
+                              ? 'bg-cyan-500/10 border-cyan-500/20 hover:bg-cyan-500/20 text-cyan-100'
+                              : isDark
+                              ? 'bg-white/5 border-white/10 hover:bg-white/10 text-white/90'
+                              : 'bg-white/50 border-gray-200/50 hover:bg-white/70 text-gray-800'
+                          }`}
+                        >
+                          <div className="font-medium truncate">{evt.summary || 'Untitled'}</div>
+                          <div className={`text-xs mt-0.5 flex items-center justify-between ${
+                            isBlackIce ? 'text-cyan-200/60' : isDark ? 'text-white/50' : 'text-gray-500'
+                          }`}>
+                            <span>{getEventTimeDisplay(evt)}</span>
+                            <span className={`${isBlackIce ? 'text-cyan-400/70' : isDark ? 'text-purple-300/70' : 'text-purple-500/70'}`}>
+                              View details
+                            </span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })()}
         </div>
         
         {/* Perpetual Day Indicator */}
@@ -504,6 +556,85 @@ function Calendar({ theme, setTheme }) {
           theme={theme}
           onEventsLoaded={setGoogleEvents}
         />
+
+        {/* Upcoming Events Agenda */}
+        {googleEvents.length > 0 && (() => {
+          const upcoming = getUpcomingEvents(googleEvents)
+          if (upcoming.length === 0) return null
+          return (
+            <div className={`mt-4 backdrop-blur-md rounded-xl border transition-all duration-300 ${
+              isBlackIce
+                ? 'bg-slate-900/30 border-cyan-500/20'
+                : isDark
+                ? 'bg-white/5 border-white/10'
+                : 'bg-white/40 border-gray-300/30'
+            }`}>
+              <button
+                onClick={() => setIsAgendaOpen(!isAgendaOpen)}
+                className="w-full flex items-center justify-between p-4"
+              >
+                <div className="flex items-center gap-2">
+                  <CalendarIcon className={`w-5 h-5 ${
+                    isBlackIce ? 'text-cyan-400' : isDark ? 'text-purple-300' : 'text-purple-600'
+                  }`} />
+                  <span className={`text-sm font-semibold ${
+                    isBlackIce ? 'text-cyan-100' : isDark ? 'text-white' : 'text-gray-800'
+                  }`}>
+                    Upcoming Events
+                  </span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${
+                    isBlackIce
+                      ? 'bg-cyan-500/20 text-cyan-300'
+                      : isDark
+                      ? 'bg-purple-500/20 text-purple-300'
+                      : 'bg-purple-100 text-purple-600'
+                  }`}>
+                    {upcoming.length}
+                  </span>
+                </div>
+                <ChevronDownIcon className={`w-4 h-4 transition-transform duration-200 ${
+                  isAgendaOpen ? 'rotate-180' : ''
+                } ${isBlackIce ? 'text-cyan-300' : isDark ? 'text-white/70' : 'text-gray-500'}`} />
+              </button>
+
+              {isAgendaOpen && (
+                <div className={`px-4 pb-4 max-h-64 overflow-y-auto space-y-1.5 border-t ${
+                  isBlackIce ? 'border-cyan-500/20' : isDark ? 'border-white/10' : 'border-gray-200/50'
+                }`}>
+                  <div className="pt-3">
+                    {upcoming.map((evt, i) => (
+                      <button
+                        key={evt.id || i}
+                        onClick={() => setSelectedEvent(evt)}
+                        className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all duration-200 flex items-center gap-3 ${
+                          i > 0 ? 'mt-1.5' : ''
+                        } ${
+                          isBlackIce
+                            ? 'hover:bg-cyan-500/15 text-cyan-100'
+                            : isDark
+                            ? 'hover:bg-white/10 text-white/90'
+                            : 'hover:bg-white/60 text-gray-800'
+                        }`}
+                      >
+                        <span className={`text-xs font-mono w-14 flex-shrink-0 ${
+                          isBlackIce ? 'text-cyan-300/70' : isDark ? 'text-purple-300/70' : 'text-purple-500/70'
+                        }`}>
+                          {getShort13MonthDate(evt)}
+                        </span>
+                        <span className="font-medium truncate flex-1">{evt.summary || 'Untitled'}</span>
+                        <span className={`text-xs flex-shrink-0 ${
+                          isBlackIce ? 'text-cyan-200/50' : isDark ? 'text-white/50' : 'text-gray-500'
+                        }`}>
+                          {getEventTimeDisplay(evt)}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )
+        })()}
       </>
     )
   }
@@ -531,7 +662,7 @@ function Calendar({ theme, setTheme }) {
         {calendarMode === '13month' ? (
           render13MonthCalendar()
         ) : (
-          <GregorianCalendar 
+          <GregorianCalendar
             theme={theme}
             selectedMonth={selectedMonthGreg}
             selectedYear={selectedYearGreg}
@@ -541,9 +672,18 @@ function Calendar({ theme, setTheme }) {
             setTheme={setTheme}
             isDatePickerOpen={isDatePickerOpen}
             setIsDatePickerOpen={setIsDatePickerOpen}
+            googleEvents={googleEvents}
+            onSelectEvent={setSelectedEvent}
           />
         )}
       </div>
+
+      {/* Event Detail Modal */}
+      <EventDetailModal
+        event={selectedEvent}
+        onClose={() => setSelectedEvent(null)}
+        theme={theme}
+      />
     </div>
   )
 }
